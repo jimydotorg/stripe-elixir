@@ -21,10 +21,10 @@ defmodule Stripe.Mixfile do
 
   def package do
     [
-      name: "stripe_elixir",
-      maintainers: ["Sikan He"],
+      name: "stripe_elixir_zx",
+      maintainers: ["jimydotorg"],
       licenses: ["Apache 2.0"],
-      links: %{"GitHub" => "https://github.com/sikanhe/stripe-elixir"}
+      links: %{"GitHub" => "https://github.com/jimydotorg/stripe-elixir"}
     ]
   end
 

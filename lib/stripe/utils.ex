@@ -28,9 +28,16 @@ defmodule Stripe.Utils do
 
   # covers non-keyword lists
   defp encode_pair(parent_field, list, encoder) when is_list(list) do
-   prune Enum.flat_map list, fn value ->
-     [?&, encode_pair(parent_field <> "[]", value, encoder)]
-   end
+    {result, _} = Enum.flat_map_reduce list, 0, fn value, acc ->
+      case value do
+        val when is_list(val) or is_map(val) -> 
+          {[?&, encode_pair(parent_field <> "[#{acc}]", value, encoder)], acc+1}
+        _ -> 
+          {[?&, encode_pair(parent_field <> "[]", value, encoder)], acc+1}
+      end
+    end
+
+    prune result
   end
 
   # covers nil

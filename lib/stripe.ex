@@ -44,34 +44,62 @@ defmodule Stripe do
     Path.join(get_api_endpoint(), endpoint)
   end
 
-  defp request_url(endpoint, []) do
-    Path.join(get_api_endpoint(), endpoint)
+  defp request_url(endpoint, [], action) do
+    request_url(endpoint)
   end
 
-  defp request_url(endpoint, data) do
+  defp request_url(endpoint, data, action) when action in [:post, :put] do
+    request_url(endpoint)
+  end
+
+  defp request_url(endpoint, data, action) do
     base_url = request_url(endpoint)
     query_params = Stripe.Utils.encode_data(data)
     "#{base_url}?#{query_params}"
   end
 
-  defp create_headers(opts) do
-    headers = 
-      [{"Authorization", "Bearer #{get_secret_key()}"},
-       {"User-Agent", "Stripe/v1 stripe-elixir/#{@client_version}"},
-       {"Content-Type", "application/x-www-form-urlencoded"}]
+  defp request_body(data, action) when action in [:post, :put] do
+    Stripe.Utils.encode_data(data)
+  end
 
-    case Keyword.get(opts, :stripe_account) do 
+  defp request_body(_, _), do: ""
+
+  defp create_headers(opts, action) do
+    headers = [
+      {"Authorization", "Bearer #{get_secret_key()}"},
+      {"User-Agent", "Stripe/v1 stripe-elixir/#{@client_version}"}
+    ]
+
+    headers = case action do
+      :post -> [{"Content-Type", "application/x-www-form-urlencoded"} | headers]
+      :put -> [{"Content-Type", "application/x-www-form-urlencoded"} | headers]
+      _ -> headers
+    end
+
+    headers = case Keyword.get(opts, :stripe_account) do 
       nil -> headers 
       account_id -> [{"Stripe-Account", account_id} | headers]
     end
+
+    headers = case Keyword.get(opts, :stripe_api_version) do 
+      nil -> headers 
+      version -> [{"Stripe-Version", version} | headers]
+    end
+
+    headers = case Keyword.get(opts, :idempotency_key) do 
+      nil -> headers 
+      key -> [{"Idempotency-Key", key} | headers]
+    end
+
+    headers
   end
 
-  def request(action, endpoint, data, opts) when action in [:get, :post, :delete] do
-    HTTPoison.request(action, request_url(endpoint, data), "", create_headers(opts))
+  def request(action, endpoint, data, opts) when action in [:get, :post, :put, :delete] do
+    HTTPoison.request(action, request_url(endpoint, data, action), request_body(data, action), create_headers(opts, action))
     |> handle_response
   end
 
-  defp handle_response({:ok, %{body: body, status_code: 200}}) do
+  defp handle_response({:ok, %{body: body, status_code: code}}) when code >= 200 and code < 300 do
     {:ok, process_response_body(body)}
   end
 
@@ -83,14 +111,14 @@ defmodule Stripe do
 
     error_struct =
       case code do
-        code when code in [400, 404] ->
-          %InvalidRequestError{message: message, param: error["param"]}
         401 ->
           %AuthenticationError{message: message}
         402 ->
           %CardError{message: message, code: error["code"], param: error["param"]}
         429 ->
           %RateLimitError{message: message}
+        code when code >= 400 and code < 500 ->
+          %InvalidRequestError{message: message, param: error["param"]}
         _ ->
           %APIError{message: message}
       end

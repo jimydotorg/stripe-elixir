@@ -18,3 +18,5 @@ erl_crash.dump
 
 # Mac artifact
 .DS_Store
+
+.env
