@@ -40,6 +40,8 @@ defmodule Stripe do
     @default_api_endpoint
   end
 
+  defp log_requests, do: Application.get_env(:stripe, :log)
+
   defp request_url(endpoint) do
     Path.join(get_api_endpoint(), endpoint)
   end
@@ -95,8 +97,14 @@ defmodule Stripe do
   end
 
   def request(action, endpoint, data, opts) when action in [:get, :post, :put, :delete] do
-    HTTPoison.request(action, request_url(endpoint, data, action), request_body(data, action), create_headers(opts, action))
+
+    url = request_url(endpoint, data, action)
+    body = request_body(data, action)
+    if log_requests(), do: IO.write("#{action} #{url}\n#{body}\n\n")
+
+    HTTPoison.request(action, url, body, create_headers(opts, action))
     |> handle_response
+
   end
 
   defp handle_response({:ok, %{body: body, status_code: code}}) when code >= 200 and code < 300 do
@@ -131,6 +139,7 @@ defmodule Stripe do
   end
 
   defp process_response_body(body) do
+    if log_requests(), do: IO.write("response: #{body}\n")
     Poison.decode! body
   end
 end

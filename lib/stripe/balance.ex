@@ -6,6 +6,6 @@ defmodule Stripe.Balance do
   end
 
   def retrieve do
-    list
+    list()
   end
 end
