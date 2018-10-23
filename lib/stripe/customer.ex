@@ -29,6 +29,11 @@ defmodule Stripe.Customer do
     Stripe.request(:delete, "#{endpoint()}/#{customer_id}/sources/#{data[:source]}", [], opts)
   end
 
+  # not in stripe api documentation.. does this work?
+  def list_sources(customer_id, pagination_opts \\ [], opts \\ []) do
+    Stripe.request(:get, "#{endpoint()}/#{customer_id}/sources", pagination_opts, opts)
+  end
+
   # card
 
   def create_card(customer_id, card_id, opts \\ []) do
@@ -70,4 +75,5 @@ defmodule Stripe.Customer do
   def verify_bank_account(customer_id, bank_acct_id, amounts, opts \\ []) do
     Stripe.request(:post, "#{endpoint()}/#{customer_id}/sources/#{bank_acct_id}/verify", [amounts: amounts], opts)
   end
+
 end
