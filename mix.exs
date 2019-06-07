@@ -1,7 +1,7 @@
 defmodule Stripe.Mixfile do
   use Mix.Project
 
-  @version "0.8.0"
+  @version "0.8.1"
 
   def project do
     [app: :stripe,
@@ -37,7 +37,7 @@ defmodule Stripe.Mixfile do
 
   defp deps do
     [
-      {:httpoison, "~> 0.13"},
+      {:httpoison, "~> 1.5"},
       {:poison, "~> 2.2 or ~> 3.0"},
 
       # Docs
